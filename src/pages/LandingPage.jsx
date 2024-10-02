@@ -8,6 +8,7 @@ import mysql_icon from "../assets/mysql.png";
 import postgres_icon from "../assets/postgres.png";
 import sqlite_icon from "../assets/sqlite.png";
 import mariadb_icon from "../assets/mariadb.png";
+import oraclesql_icon from "../assets/oraclesql.png";
 import sql_server_icon from "../assets/sql-server.png";
 import discord from "../assets/discord.png";
 import github from "../assets/github.png";
@@ -326,6 +327,7 @@ const dbs = [
   { icon: sqlite_icon, height: 64 },
   { icon: mariadb_icon, height: 64 },
   { icon: sql_server_icon, height: 64 },
+  { icon: oraclesql_icon, height: 64 },
 ];
 
 const features = [
