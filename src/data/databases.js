@@ -48,7 +48,7 @@ export const databases = new Proxy(
       label: DB.ORACLESQL,
       image: oraclesqlImage,
       hasTypes: false,
-      hasEnums: false,
+      hasEnums: true,
       hasArrays: false,
     },
     [DB.GENERIC]: {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Input,
   TextArea,
@@ -20,6 +20,10 @@ export default function FieldDetails({ data, tid, index }) {
   const { setUndoStack, setRedoStack } = useUndoRedo();
   const { updateField, deleteField } = useDiagram();
   const [editField, setEditField] = useState({});
+
+  useEffect(() => {
+    console.log(data, tables, database, dbToTypes[database][data.type].isSized);
+  }, [data]);
 
   return (
     <div>
