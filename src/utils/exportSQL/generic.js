@@ -134,6 +134,63 @@ export function getTypeString(
     }
 
     return type;
+  } else if (dbms === "oraclesql") {
+    let type = field.type;
+
+    switch (field.type) {
+      case "INT":
+      case "INTEGER":
+      case "SMALLINT":
+      case "BIGINT":
+      case "DECIMAL":
+      case "NUMERIC":
+      case "REAL":
+      case "FLOAT":
+      case "DOUBLE":
+        type = "NUMBER";
+        break;
+      case "CHAR":
+        type = "CHAR";
+        break;
+      case "VARCHAR":
+        type = "VARCHAR2";
+        break;
+      case "TEXT":
+        type = "CLOB";
+        break;
+      case "TIME":
+        type = "TIMESTAMP";
+        break;
+      case "BOOLEAN":
+        type = "NUMBER(1)";
+        break;
+      case "BINARY":
+      case "VARBINARY":
+        type = "RAW";
+        break;
+      case "BLOB":
+        type = "BLOB";
+        break;
+      case "JSON":
+        type = "JSON";
+        break;
+      case "UUID":
+        type = "RAW(16)";
+        break;
+      case "ENUM":
+      case "SET":
+        return `VARCHAR2 CHECK (${field.name} IN (${field.values.map((v) => `'${v}'`).join(", ")}))`;
+        break;
+      default:
+        type = field.type;
+        break;
+    }
+
+    if (dbToTypes[currentDb][field.type].isSized) {
+      return `${type}(${field.size})`;
+    }
+
+    return type;
   }
 }
 
@@ -488,6 +545,58 @@ export function jsonToSQLServer(obj) {
         }]) REFERENCES [${obj.tables[r.endTableId].name}]([${
           obj.tables[r.endTableId].fields[r.endFieldId].name
         }])\nON UPDATE ${r.updateConstraint.toUpperCase()} ON DELETE ${r.deleteConstraint.toUpperCase()};\nGO`,
+    )
+    .join("\n")}`;
+}
+
+export function jsonToOracleSQL(obj) {
+  return `${obj.tables
+    .map(
+      (table) =>
+        `${
+          table.comment === "" ? "" : `/* ${table.comment} */\n`
+        }CREATE TABLE "${table.name}" (\n${table.fields
+          .map(
+            (field) =>
+              `${field.comment === "" ? "" : `  -- ${field.comment}\n`}  "${
+                field.name
+              }" ${getTypeString(field, obj.database, "oraclesql")}${field.primary ? "" : field.notNull ? (table.indices.some((index) => index.fields.some((f) => f === field.name)) ? " NOT NULL" : field.unique ? " NOT NULL UNIQUE" : " UNIQUE") : ""}${
+                field.default !== ""
+                  ? ` DEFAULT ${parseDefault(field, obj.database)}`
+                  : ""
+              }${
+                field.check === "" ||
+                !dbToTypes[obj.database][field.type].hasCheck
+                  ? ""
+                  : ` CHECK (${field.check})`
+              }`,
+          )
+          .join(",\n")}${
+          table.fields.filter((f) => f.primary).length > 0
+            ? `,\n  PRIMARY KEY (${table.fields
+                .filter((f) => f.primary)
+                .map((f) => `"${f.name}"`)
+                .join(", ")})`
+            : ""
+        }\n);\n${table.indices
+          .map(
+            (i) =>
+              `\nCREATE ${i.unique ? "UNIQUE " : ""}INDEX "${i.name}"\n  ON "${
+                table.name
+              }" (${i.fields.map((f) => `"${f}"`).join(", ")});`,
+          )
+          .join("\n")}`,
+    )
+    .join("\n\n")}\n${obj.references
+    .map(
+      (r) =>
+        `ALTER TABLE "${obj.tables[r.startTableId].name}"\nADD CONSTRAINT fk_${
+          r.startTableId
+        }_${r.endTableId} FOREIGN KEY ("${
+          obj.tables[r.startTableId].fields[r.startFieldId].name
+        }") REFERENCES "${obj.tables[r.endTableId].name}"("${
+          obj.tables[r.endTableId].fields[r.endFieldId].name
+        }");`,
     )
     .join("\n")}`;
 }
